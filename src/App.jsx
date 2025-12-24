@@ -148,7 +148,7 @@ const MagicMirror = ({ onScan }) => {
   }, []);
 
   return (
-    <div className="relative w-72 h-80 bg-black rounded-[3rem] border-[12px] border-slate-700 shadow-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+    <div className="relative w-64 h-72 sm:w-72 sm:h-80 bg-black rounded-[2rem] sm:rounded-[3rem] border-[8px] sm:border-[12px] border-slate-700 shadow-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
         {!error ? (
            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" />
         ) : (
@@ -191,16 +191,16 @@ const TeacherPortal = ({ onExit }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-100 p-4 animate-slide-up">
-       <div className="bg-white w-full max-w-md h-[600px] rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative">
-          <div className="bg-blue-600 p-6 pb-12 text-white relative overflow-hidden">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-100 p-3 sm:p-4 animate-slide-up">
+       <div className="bg-white w-full max-w-md h-[90vh] sm:h-[600px] max-h-[700px] rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative">
+          <div className="bg-blue-600 p-4 sm:p-6 pb-10 sm:pb-12 text-white relative overflow-hidden">
              <div className="relative z-10 flex justify-between items-start">
-               <div><h2 className="font-bold text-lg flex items-center gap-2"><School size={20}/> Class 1-A</h2><p className="text-blue-200 text-xs font-bold">Gov School #4</p></div>
-               <button onClick={onExit} className="bg-blue-500 p-2 rounded-full hover:bg-blue-400"><LogOut size={16}/></button>
+               <div><h2 className="font-bold text-base sm:text-lg flex items-center gap-2"><School size={18} className="sm:w-5 sm:h-5"/> Class 1-A</h2><p className="text-blue-200 text-xs font-bold">Gov School #4</p></div>
+               <button onClick={onExit} className="bg-blue-500 p-1.5 sm:p-2 rounded-full hover:bg-blue-400"><LogOut size={14} className="sm:w-4 sm:h-4"/></button>
              </div>
-             <div className="absolute -bottom-10 -right-10 text-blue-500 opacity-50"><Users size={120}/></div>
+             <div className="absolute -bottom-10 -right-10 text-blue-500 opacity-50 hidden sm:block"><Users size={120}/></div>
           </div>
-          <div className="flex-1 -mt-6 bg-white rounded-t-[2rem] p-6 flex flex-col relative z-20">
+          <div className="flex-1 -mt-4 sm:-mt-6 bg-white rounded-t-[1.5rem] sm:rounded-t-[2rem] p-4 sm:p-6 flex flex-col relative z-20">
              <div className="bg-white border-2 border-slate-100 rounded-2xl p-4 shadow-sm mb-6">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">New Admission</label>
                 <div className="flex gap-2 mt-2 mb-3">
@@ -296,14 +296,14 @@ const StudentApp = ({ student, onLogout }) => {
   if (stage === 'welcome') return (
     <div className="h-screen w-full bg-white flex flex-col items-center justify-center relative overflow-hidden font-sans animate-fade-in">
       <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:20px_20px]"></div>
-      <div className="relative z-10 flex flex-col items-center w-full max-w-sm px-6">
-        <div className="w-48 h-48 bg-yellow-100 rounded-full flex items-center justify-center text-9xl shadow-xl border-8 border-white mb-8 animate-bounce-gentle">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-sm px-4 sm:px-6">
+        <div className="w-32 h-32 sm:w-48 sm:h-48 bg-yellow-100 rounded-full flex items-center justify-center text-6xl sm:text-9xl shadow-xl border-4 sm:border-8 border-white mb-6 sm:mb-8 animate-bounce-gentle">
              {student.gender === 'boy' ? '👦' : '👧'}
         </div>
-        <h1 className="text-5xl font-black text-slate-800 mb-2 tracking-tight text-center">Hello, {student.name}!</h1>
-        <p className="text-slate-400 font-bold mb-12 uppercase tracking-widest text-sm">Ready to learn?</p>
-        <button onClick={handleStart} className="w-full bg-green-500 hover:bg-green-600 text-white font-black text-2xl py-5 rounded-2xl shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-3 border-b-4 border-green-700">
-          START <Play fill="white" size={28} />
+        <h1 className="text-3xl sm:text-5xl font-black text-slate-800 mb-2 tracking-tight text-center px-2">Hello, {student.name}!</h1>
+        <p className="text-slate-400 font-bold mb-8 sm:mb-12 uppercase tracking-widest text-xs sm:text-sm">Ready to learn?</p>
+        <button onClick={handleStart} className="w-full bg-green-500 hover:bg-green-600 text-white font-black text-lg sm:text-2xl py-4 sm:py-5 rounded-2xl shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-2 sm:gap-3 border-b-4 border-green-700">
+          START <Play fill="white" size={24} className="sm:w-7 sm:h-7" />
         </button>
       </div>
     </div>
@@ -312,16 +312,16 @@ const StudentApp = ({ student, onLogout }) => {
   // 2. REWARD
   if (stage === 'reward') return (
     <div className="h-screen w-full bg-slate-900 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden animate-fade-in">
-       <div className="bg-white p-8 rounded-[3rem] shadow-2xl border-8 border-yellow-400 text-center w-full max-w-sm z-10">
-          <h1 className="text-4xl font-black text-slate-800 mb-2">Good Job!</h1>
-          <div className="bg-slate-100 rounded-2xl p-6 mb-8 flex flex-col items-center mt-6 border-2 border-slate-200">
+       <div className="bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] shadow-2xl border-4 sm:border-8 border-yellow-400 text-center w-full max-w-sm z-10 mx-4">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-800 mb-2">Good Job!</h1>
+          <div className="bg-slate-100 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 flex flex-col items-center mt-4 sm:mt-6 border-2 border-slate-200">
              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Coins</span>
-             <div className="text-6xl font-black text-yellow-500 flex items-center gap-2 mt-2">
-                <Coins size={48} className="text-yellow-500 fill-yellow-500"/> {coins}
+             <div className="text-4xl sm:text-6xl font-black text-yellow-500 flex items-center gap-2 mt-2">
+                <Coins size={32} className="sm:w-12 sm:h-12 text-yellow-500 fill-yellow-500"/> {coins}
              </div>
           </div>
-          <button onClick={onLogout} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 text-xl">
-             Finish Demo <LogOut size={20} />
+          <button onClick={onLogout} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 sm:py-4 rounded-2xl shadow-[0_4px_0_rgb(21,128,61)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 text-lg sm:text-xl">
+             Finish Demo <LogOut size={18} className="sm:w-5 sm:h-5" />
           </button>
        </div>
     </div>
@@ -331,65 +331,65 @@ const StudentApp = ({ student, onLogout }) => {
   return (
     <div className={`h-screen w-full flex flex-col font-sans transition-colors duration-700 ${word.color} relative overflow-hidden`}>
       {/* Header */}
-      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-20">
-        <div className="flex gap-2">
+      <div className="absolute top-0 left-0 w-full p-3 sm:p-6 flex justify-between items-center z-20">
+        <div className="flex gap-1 sm:gap-2">
            {[...Array(8)].map((_, i) => (
-             <div key={i} className={`h-3 w-8 rounded-full transition-colors border-2 border-white/50 ${i <= level ? 'bg-green-500' : 'bg-black/10'}`}></div>
+             <div key={i} className={`h-2 w-4 sm:h-3 sm:w-8 rounded-full transition-colors border border-white/50 sm:border-2 ${i <= level ? 'bg-green-500' : 'bg-black/10'}`}></div>
            ))}
         </div>
-        <div className="flex gap-4">
-           <div className="bg-yellow-400 px-4 py-2 rounded-full font-black text-yellow-900 flex items-center gap-2 shadow-lg border-4 border-white">
-              {coins} <Coins size={20} fill="currentColor"/>
+        <div className="flex gap-2 sm:gap-4">
+           <div className="bg-yellow-400 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full font-black text-yellow-900 flex items-center gap-1 sm:gap-2 shadow-lg border-2 sm:border-4 border-white text-sm sm:text-base">
+              {coins} <Coins size={16} className="sm:w-5 sm:h-5 fill-current"/>
            </div>
-           <button onClick={onLogout} className="bg-white p-3 rounded-full shadow-lg text-red-400 hover:scale-110 transition-transform"><LogOut size={20}/></button>
+           <button onClick={onLogout} className="bg-white p-2 sm:p-3 rounded-full shadow-lg text-red-400 hover:scale-110 transition-transform"><LogOut size={18} className="sm:w-5 sm:h-5"/></button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full pt-28 pb-4">
+      <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full pt-20 sm:pt-28 pb-4">
          <div className="flex-1 flex flex-col items-center justify-center w-full px-4">
             {stage === 'listen' ? (
-              <div className="animate-pop-in flex flex-col items-center justify-center h-full">
+              <div className="animate-pop-in flex flex-col items-center justify-center h-full w-full">
                  <div 
-                   className="text-[150px] leading-none filter drop-shadow-2xl transform hover:scale-110 transition-transform cursor-pointer" 
+                   className="text-[80px] sm:text-[120px] md:text-[150px] leading-none filter drop-shadow-2xl transform hover:scale-110 transition-transform cursor-pointer" 
                    onClick={playWordAudio}
                  >
                     {word.img}
                  </div>
                  
-                 <div className="mt-8 bg-white/40 backdrop-blur-sm px-8 py-3 rounded-2xl border-2 border-white/50 shadow-sm">
-                    <span className="text-4xl font-black text-slate-800 drop-shadow-sm">{word.vn}</span>
+                 <div className="mt-4 sm:mt-8 bg-white/40 backdrop-blur-sm px-4 sm:px-8 py-2 sm:py-3 rounded-2xl border-2 border-white/50 shadow-sm">
+                    <span className="text-2xl sm:text-4xl font-black text-slate-800 drop-shadow-sm">{word.vn}</span>
                  </div>
                  
-                 <button onClick={playWordAudio} className="mt-8 bg-white text-blue-500 px-10 py-4 rounded-full font-black text-xl flex items-center gap-4 shadow-xl hover:bg-blue-50 transition-all active:scale-95 border-b-4 border-blue-100">
-                    <Volume2 size={32} /> Tap to Listen
+                 <button onClick={playWordAudio} className="mt-4 sm:mt-8 bg-white text-blue-500 px-6 sm:px-10 py-3 sm:py-4 rounded-full font-black text-base sm:text-xl flex items-center gap-2 sm:gap-4 shadow-xl hover:bg-blue-50 transition-all active:scale-95 border-b-4 border-blue-100">
+                    <Volume2 size={24} className="sm:w-8 sm:h-8" /> <span className="text-sm sm:text-xl">Tap to Listen</span>
                  </button>
               </div>
             ) : (
-              <div className="animate-pop-in text-center px-4 flex flex-col items-center justify-center h-full">
-                 <h1 className="text-8xl font-black text-slate-800 mb-6 tracking-tighter drop-shadow-sm">{word.en}</h1>
-                 <div className="flex flex-col gap-2 bg-white/60 px-8 py-6 rounded-3xl backdrop-blur-md border border-white/40 shadow-sm min-w-[250px]">
-                    <p className="text-4xl font-bold text-gray-500 font-mono tracking-widest">{word.phonetic}</p>
-                    <p className="text-3xl font-black text-blue-600">{word.vn}</p>
+              <div className="animate-pop-in text-center px-4 flex flex-col items-center justify-center h-full w-full">
+                 <h1 className="text-5xl sm:text-7xl md:text-8xl font-black text-slate-800 mb-4 sm:mb-6 tracking-tighter drop-shadow-sm break-words">{word.en}</h1>
+                 <div className="flex flex-col gap-2 bg-white/60 px-4 sm:px-8 py-4 sm:py-6 rounded-2xl sm:rounded-3xl backdrop-blur-md border border-white/40 shadow-sm w-full max-w-[90%] sm:min-w-[250px]">
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-500 font-mono tracking-wider break-words">{word.phonetic}</p>
+                    <p className="text-xl sm:text-2xl md:text-3xl font-black text-blue-600 break-words">{word.vn}</p>
                  </div>
               </div>
             )}
          </div>
 
-         <div className="w-full flex justify-center px-6 pb-6">
+         <div className="w-full flex justify-center px-4 sm:px-6 pb-4 sm:pb-6">
              {status === 'listening' ? (
-               <div className="bg-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border-4 border-red-100 animate-pulse w-full max-w-sm justify-center">
-                  <div className="w-4 h-4 bg-red-500 rounded-full animate-ping"></div>
-                  <span className="text-xl font-black text-red-500 uppercase tracking-widest">Listening...</span>
+               <div className="bg-white px-4 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-2xl flex items-center gap-2 sm:gap-4 border-4 border-red-100 animate-pulse w-full max-w-sm justify-center">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full animate-ping"></div>
+                  <span className="text-base sm:text-xl font-black text-red-500 uppercase tracking-widest">Listening...</span>
                </div>
              ) : status === 'success' ? (
-               <div className="bg-green-500 px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 animate-pop-in w-full max-w-sm justify-center">
-                  <Check size={32} className="text-white" strokeWidth={4} />
-                  <span className="text-xl font-black text-white uppercase tracking-widest">Perfect!</span>
+               <div className="bg-green-500 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-2xl flex items-center gap-2 sm:gap-4 animate-pop-in w-full max-w-sm justify-center">
+                  <Check size={24} className="sm:w-8 sm:h-8 text-white" strokeWidth={4} />
+                  <span className="text-base sm:text-xl font-black text-white uppercase tracking-widest">Perfect!</span>
                </div>
              ) : (
-               <button onClick={handleMic} className={`${word.btn} text-white font-black text-xl py-4 px-10 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-3 w-full max-w-sm`}>
-                 <Mic size={28} /> {stage === 'listen' ? "SAY IT" : "READ IT"}
+               <button onClick={handleMic} className={`${word.btn} text-white font-black text-base sm:text-xl py-3 sm:py-4 px-6 sm:px-10 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3 w-full max-w-sm`}>
+                 <Mic size={20} className="sm:w-7 sm:h-7" /> <span>{stage === 'listen' ? "SAY IT" : "READ IT"}</span>
                </button>
              )}
          </div>
@@ -427,28 +427,28 @@ export default function App() {
 
       {/* LANDING PAGE */}
       <div className="absolute inset-0 bg-sky-300">
-         <div className="absolute top-10 right-10 w-32 h-32 bg-yellow-400 rounded-full shadow-[0_0_60px_rgba(250,204,21,0.8)] animate-pulse"></div>
-         <div className="absolute top-20 left-10 text-white/60"><CloudIcon size={120} /></div>
-         <div className="absolute top-40 right-40 text-white/40"><CloudIcon size={80} /></div>
+         <div className="absolute top-4 right-4 sm:top-10 sm:right-10 w-20 h-20 sm:w-32 sm:h-32 bg-yellow-400 rounded-full shadow-[0_0_60px_rgba(250,204,21,0.8)] animate-pulse"></div>
+         <div className="absolute top-12 left-4 sm:top-20 sm:left-10 text-white/60"><CloudIcon size={80} /></div>
+         <div className="absolute top-24 right-20 sm:top-40 sm:right-40 text-white/40 hidden sm:block"><CloudIcon size={80} /></div>
          
-         <div className="absolute bottom-0 w-full h-1/3 bg-green-500 border-t-[12px] border-green-600">
-            <div className="absolute -top-24 left-10"><AnimatedRabbit size={140} /></div>
-            <div className="absolute -top-16 right-10"><AnimatedCat size={120} /></div>
-            <div className="absolute top-10 left-1/4 opacity-30 text-green-800"><GrassClump className="w-12 h-12"/></div>
-            <div className="absolute top-4 right-1/3 opacity-30 text-green-800"><GrassClump className="w-12 h-12"/></div>
+         <div className="absolute bottom-0 w-full h-1/3 bg-green-500 border-t-[8px] sm:border-t-[12px] border-green-600">
+            <div className="absolute -top-16 -left-4 sm:-top-24 sm:left-10"><AnimatedRabbit size={100} /></div>
+            <div className="absolute -top-12 -right-4 sm:-top-16 sm:right-10"><AnimatedCat size={80} /></div>
+            <div className="absolute top-6 left-1/4 opacity-30 text-green-800 hidden sm:block"><GrassClump className="w-12 h-12"/></div>
+            <div className="absolute top-2 right-1/3 opacity-30 text-green-800 hidden sm:block"><GrassClump className="w-12 h-12"/></div>
          </div>
       </div>
 
-      <div className="relative z-10 h-full flex flex-col items-center justify-center p-4">
+      <div className="relative z-10 h-full flex flex-col items-center justify-center p-4 sm:p-6">
         {view === 'mirror' && !showIntro && (
           <div className="flex flex-col items-center animate-fade-in w-full max-w-sm">
              <MagicMirror onScan={() => {}} />
-             <div className="mt-12 flex justify-between w-full px-4">
-                <button onClick={() => setShowTeacher(true)} className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-xs font-bold border border-white/20 px-4 py-2 rounded-full hover:bg-white/10 bg-black/10">
-                   <Settings size={14} /> Teacher
+             <div className="mt-8 sm:mt-12 flex justify-between w-full px-2 sm:px-4 gap-2">
+                <button onClick={() => setShowTeacher(true)} className="flex items-center gap-1.5 sm:gap-2 text-white/50 hover:text-white transition-colors text-xs font-bold border border-white/20 px-3 sm:px-4 py-2 rounded-full hover:bg-white/10 bg-black/10">
+                   <Settings size={12} className="sm:w-3.5 sm:h-3.5" /> <span className="hidden xs:inline">Teacher</span>
                 </button>
-                <button onClick={handleDemoLogin} className="flex items-center gap-2 bg-yellow-400 text-yellow-900 hover:bg-yellow-300 transition-all text-xs font-bold border-b-4 border-yellow-600 px-4 py-2 rounded-full shadow-lg active:border-b-0 active:translate-y-1">
-                   <Zap size={14} /> Demo Student
+                <button onClick={handleDemoLogin} className="flex items-center gap-1.5 sm:gap-2 bg-yellow-400 text-yellow-900 hover:bg-yellow-300 transition-all text-xs font-bold border-b-4 border-yellow-600 px-3 sm:px-4 py-2 rounded-full shadow-lg active:border-b-0 active:translate-y-1">
+                   <Zap size={12} className="sm:w-3.5 sm:h-3.5" /> <span>Demo Student</span>
                 </button>
              </div>
           </div>
