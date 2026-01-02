@@ -35,21 +35,125 @@ const DB = {
 // ==========================================
 // 1. HELPERS
 // ==========================================
+
+// Audio cache for pre-recorded word pronunciations
+const audioCache = {};
+let currentAudio = null; // Track currently playing audio
+
+// Stop all audio and speech
+const stopAllAudio = () => {
+  // Stop browser TTS
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  // Stop any playing audio
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+};
+
+// Speak a word - uses pre-recorded audio if available, fallback to TTS
 const speak = (text, onEnd = null) => {
+  // Stop any currently playing audio first
+  stopAllAudio();
+  const word = text.toLowerCase().trim();
+  const audioPath = `/audio/${word}.mp3`;
+  
+  // Try pre-recorded audio first
+  if (audioCache[word]) {
+    // Use cached audio
+    const audio = audioCache[word].cloneNode();
+    currentAudio = audio;
+    audio.onended = () => { currentAudio = null; if (onEnd) onEnd(); };
+    audio.onerror = () => { currentAudio = null; fallbackToTTS(text, onEnd); };
+    audio.play().catch(() => { currentAudio = null; fallbackToTTS(text, onEnd); });
+    return;
+  }
+  
+  // Try to load and cache the audio
+  const audio = new Audio(audioPath);
+  audio.oncanplaythrough = () => {
+    audioCache[word] = audio;
+    const playAudio = audio.cloneNode();
+    currentAudio = playAudio;
+    playAudio.onended = () => { currentAudio = null; if (onEnd) onEnd(); };
+    playAudio.play().catch(() => { currentAudio = null; fallbackToTTS(text, onEnd); });
+  };
+  audio.onerror = () => fallbackToTTS(text, onEnd);
+  audio.load();
+};
+
+// Fallback to browser TTS if audio file not found
+const fallbackToTTS = (text, onEnd = null) => {
   try {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      if (onEnd) {
-        utterance.onend = onEnd;
-      }
+      utterance.lang = 'en-IN';
+      utterance.rate = 0.75;
+      utterance.pitch = 1.1;
+      
+      // Try to find Indian voice
+      const voices = window.speechSynthesis.getVoices();
+      const indianVoice = voices.find(v => v.lang.includes('en-IN')) || 
+                          voices.find(v => v.lang.startsWith('en'));
+      if (indianVoice) utterance.voice = indianVoice;
+      
+      if (onEnd) utterance.onend = onEnd;
+      
       window.speechSynthesis.speak(utterance);
+    } else if (onEnd) {
+      // No TTS available, just call onEnd after delay
+      setTimeout(onEnd, 500);
     }
   } catch (e) {
     console.warn("TTS Error:", e);
+    if (onEnd) setTimeout(onEnd, 500);
   }
+};
+
+// Confetti Celebration Component - colorful falling pieces
+const CelebrationAnimation = () => {
+  // Generate random confetti pieces
+  const pieces = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 0.3,
+    duration: 1.2 + Math.random() * 0.8,
+    color: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#FF69B4', '#98D8C8'][Math.floor(Math.random() * 8)],
+    size: 10 + Math.random() * 15,
+    type: Math.random() > 0.6 ? 'circle' : 'rect',
+  }));
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[300] overflow-hidden">
+      {pieces.map((piece) => (
+        <div
+          key={piece.id}
+          className="absolute animate-confetti-fall"
+          style={{
+            left: `${piece.left}%`,
+            top: '-20px',
+            animationDelay: `${piece.delay}s`,
+            animationDuration: `${piece.duration}s`,
+          }}
+        >
+          <div
+            style={{
+              width: piece.size,
+              height: piece.type === 'rect' ? piece.size * 0.4 : piece.size,
+              backgroundColor: piece.color,
+              borderRadius: piece.type === 'circle' ? '50%' : '2px',
+              boxShadow: `0 2px 4px rgba(0,0,0,0.2)`,
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  );
 };
 
 
@@ -657,7 +761,7 @@ const StudentApp = ({ student, onLogout }) => {
       if (recognitionRef.current) {
         try { recognitionRef.current.stop(); } catch(e) {}
       }
-      window.speechSynthesis?.cancel();
+      stopAllAudio(); // Stop all audio when leaving
     };
   }, []);
 
@@ -694,17 +798,7 @@ const StudentApp = ({ student, onLogout }) => {
   return (
     <div className={`h-screen w-full flex flex-col font-sans transition-colors duration-700 ${word.color} relative overflow-hidden`}>
       {/* Celebration Animation */}
-      {showCelebration && (
-        <div className="fixed inset-0 z-[200] pointer-events-none animate-celebration">
-          <div className="absolute top-1/4 left-1/4 text-6xl animate-bounce">🎉</div>
-          <div className="absolute top-1/3 right-1/4 text-5xl animate-bounce delay-100">⭐</div>
-          <div className="absolute bottom-1/3 left-1/3 text-6xl animate-bounce delay-200">✨</div>
-          <div className="absolute bottom-1/4 right-1/3 text-5xl animate-bounce delay-300">🌟</div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-7xl animate-pulse">🎊</div>
-          <div className="absolute top-2/5 right-1/5 text-4xl animate-bounce delay-400">💫</div>
-          <div className="absolute bottom-2/5 left-1/5 text-5xl animate-bounce delay-500">🎈</div>
-        </div>
-      )}
+      {showCelebration && <CelebrationAnimation />}
       {/* Header */}
       <div className="absolute top-0 left-0 w-full p-3 sm:p-6 flex justify-between items-center z-20">
         <div className="flex gap-1 sm:gap-2">
@@ -861,7 +955,7 @@ export default function App() {
 
       {view === 'student' && (
         <div className="fixed inset-0 z-50 bg-white">
-           <StudentApp student={student} onLogout={() => { setStudent(null); setView('mirror'); }} />
+           <StudentApp student={student} onLogout={() => { stopAllAudio(); setStudent(null); setView('mirror'); }} />
         </div>
       )}
 
@@ -879,16 +973,51 @@ export default function App() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .animate-celebration { animation: fadeIn 0.3s ease-out; }
-        .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
-        .delay-300 { animation-delay: 0.3s; }
-        .delay-400 { animation-delay: 0.4s; }
-        .delay-500 { animation-delay: 0.5s; }
-        @keyframes celebration { 
-          0% { opacity: 0; transform: scale(0); } 
-          50% { opacity: 1; transform: scale(1.2); }
-          100% { opacity: 0; transform: scale(1) translateY(-100px); }
+        
+        /* Confetti celebration animations */
+        @keyframes confetti-fall {
+          0% { 
+            transform: translateY(0) rotate(0deg) scale(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+            transform: translateY(10vh) rotate(90deg) scale(1);
+          }
+          100% { 
+            transform: translateY(100vh) rotate(720deg) scale(0.5);
+            opacity: 0;
+          }
+        }
+        .animate-confetti-fall {
+          animation: confetti-fall 2s ease-out forwards;
+        }
+        
+        @keyframes star-pop {
+          0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+          50% { transform: translate(-50%, -50%) scale(1.5) rotate(180deg); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); opacity: 1; }
+        }
+        .animate-star-pop {
+          animation: star-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        
+        @keyframes celebration-burst {
+          0% { transform: scale(0); opacity: 0; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(1); opacity: 0.8; }
+        }
+        .animate-celebration-burst {
+          animation: celebration-burst 0.5s ease-out forwards;
+        }
+        
+        @keyframes ray-burst {
+          0% { stroke-dasharray: 0 100; opacity: 0; }
+          50% { stroke-dasharray: 50 50; opacity: 1; }
+          100% { stroke-dasharray: 80 20; opacity: 0.6; }
+        }
+        .animate-ray-burst {
+          animation: ray-burst 0.8s ease-out forwards;
         }
         @keyframes heavy-drop { 0% { transform: translateY(-100vh) rotate(-10deg); opacity: 1; } 60% { transform: translateY(0); } 75% { transform: translateY(-20px) rotate(5deg); } 100% { transform: translateY(0) rotate(0deg); opacity: 1; } }
         @keyframes cyber-slide { 0% { transform: translateX(-100vw) skewX(-20deg); opacity: 0; filter: blur(10px); } 70% { transform: translateX(20px) skewX(10deg); opacity: 1; filter: blur(0px); } 100% { transform: translateX(0) skewX(0deg); opacity: 1; } }
