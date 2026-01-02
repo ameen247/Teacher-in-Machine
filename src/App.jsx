@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   User, Settings, UserPlus, Check, X, ShieldCheck, 
   School, Calendar, Users, Mail, Lock, ArrowRight, 
@@ -10,14 +10,14 @@ import {
 // 0. DATA & MOCK BACKEND
 // ==========================================
 const CURRICULUM = [
-  { id: 1, en: "Apple", vn: "ಸೇಬು", phonetic: "A-pp-le", img: "🍎", color: "bg-red-50", accent: "text-red-600", btn: "bg-red-500", border: "border-red-200" },
-  { id: 2, en: "Ball", vn: "ಚೆಂಡು", phonetic: "Ball", img: "⚽", color: "bg-blue-50", accent: "text-blue-600", btn: "bg-blue-500", border: "border-blue-200" },
-  { id: 3, en: "Cat", vn: "ಬೆಕ್ಕು", phonetic: "Cat", img: "🐱", color: "bg-yellow-50", accent: "text-yellow-700", btn: "bg-yellow-500", border: "border-yellow-200" },
-  { id: 4, en: "Dog", vn: "ನಾಯಿ", phonetic: "Dog", img: "🐕", color: "bg-orange-50", accent: "text-orange-700", btn: "bg-orange-500", border: "border-orange-200" },
-  { id: 5, en: "Sun", vn: "ಸೂರ್ಯ", phonetic: "Sun", img: "☀️", color: "bg-amber-50", accent: "text-amber-600", btn: "bg-amber-500", border: "border-amber-200" },
-  { id: 6, en: "Fish", vn: "ಮೀನು", phonetic: "Fish", img: "🐟", color: "bg-cyan-50", accent: "text-cyan-600", btn: "bg-cyan-500", border: "border-cyan-200" },
-  { id: 7, en: "Girl", vn: "ಹುಡುಗಿ", phonetic: "Girl", img: "👧", color: "bg-pink-50", accent: "text-pink-600", btn: "bg-pink-500", border: "border-pink-200" },
-  { id: 8, en: "House", vn: "ಮನೆ", phonetic: "House", img: "🏠", color: "bg-emerald-50", accent: "text-emerald-600", btn: "bg-emerald-500", border: "border-emerald-200" },
+  { id: 1, en: "Apple", vn: "ಸೇಬು", translit: "ಆಪಲ್", img: "🍎", color: "bg-red-50", accent: "text-red-600", btn: "bg-red-500", border: "border-red-200" },
+  { id: 2, en: "Ball", vn: "ಚೆಂಡು", translit: "ಬಾಲ್", img: "⚽", color: "bg-blue-50", accent: "text-blue-600", btn: "bg-blue-500", border: "border-blue-200" },
+  { id: 3, en: "Cat", vn: "ಬೆಕ್ಕು", translit: "ಕ್ಯಾಟ್", img: "🐱", color: "bg-yellow-50", accent: "text-yellow-700", btn: "bg-yellow-500", border: "border-yellow-200" },
+  { id: 4, en: "Dog", vn: "ನಾಯಿ", translit: "ಡಾಗ್", img: "🐕", color: "bg-orange-50", accent: "text-orange-700", btn: "bg-orange-500", border: "border-orange-200" },
+  { id: 5, en: "Sun", vn: "ಸೂರ್ಯ", translit: "ಸನ್", img: "☀️", color: "bg-amber-50", accent: "text-amber-600", btn: "bg-amber-500", border: "border-amber-200" },
+  { id: 6, en: "Fish", vn: "ಮೀನು", translit: "ಫಿಶ್", img: "🐟", color: "bg-cyan-50", accent: "text-cyan-600", btn: "bg-cyan-500", border: "border-cyan-200" },
+  { id: 7, en: "Girl", vn: "ಹುಡುಗಿ", translit: "ಗರ್ಲ್", img: "👧", color: "bg-pink-50", accent: "text-pink-600", btn: "bg-pink-500", border: "border-pink-200" },
+  { id: 8, en: "House", vn: "ಮನೆ", translit: "ಹೌಸ್", img: "🏠", color: "bg-emerald-50", accent: "text-emerald-600", btn: "bg-emerald-500", border: "border-emerald-200" },
 ];
 
 const DB = {
@@ -35,17 +35,186 @@ const DB = {
 // ==========================================
 // 1. HELPERS
 // ==========================================
-const speak = (text) => {
+const speak = (text, onEnd = null) => {
   try {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
       utterance.rate = 0.9;
+      if (onEnd) {
+        utterance.onend = onEnd;
+      }
       window.speechSynthesis.speak(utterance);
     }
   } catch (e) {
     console.warn("TTS Error:", e);
+  }
+};
+
+
+// ==========================================
+// PHONETIC MATCHING SYSTEM
+// ==========================================
+
+// Soundex-inspired phonetic encoder - converts words to sound codes
+// Words that SOUND the same get the SAME code
+const getPhoneticCode = (word) => {
+  const w = word.toLowerCase().trim();
+  if (!w) return '';
+  
+  // Phonetic groupings - letters that sound similar
+  const phoneticMap = {
+    'b': '1', 'f': '1', 'p': '1', 'v': '1',  // Labials
+    'c': '2', 'g': '2', 'j': '2', 'k': '2', 'q': '2', 's': '2', 'x': '2', 'z': '2', // Gutturals
+    'd': '3', 't': '3',  // Dentals
+    'l': '4',  // Liquid
+    'm': '5', 'n': '5',  // Nasals
+    'r': '6',  // R
+    // a, e, i, o, u, h, w, y are ignored (vowels and weak consonants)
+  };
+  
+  // Keep first letter, encode rest
+  let code = w[0].toUpperCase();
+  let lastCode = phoneticMap[w[0]] || '0';
+  
+  for (let i = 1; i < w.length && code.length < 4; i++) {
+    const c = w[i];
+    const mapped = phoneticMap[c];
+    if (mapped && mapped !== lastCode) {
+      code += mapped;
+      lastCode = mapped;
+    } else if (!mapped) {
+      lastCode = '0'; // Reset on vowels
+    }
+  }
+  
+  // Pad to 4 characters
+  return (code + '0000').substring(0, 4);
+};
+
+// Double Metaphone-inspired: Handle common English sound patterns
+const normalizeForSound = (word) => {
+  let w = word.toLowerCase().trim();
+  
+  // Common sound normalizations
+  w = w.replace(/ph/g, 'f');     // phone -> fone
+  w = w.replace(/ght/g, 't');    // night -> nit
+  w = w.replace(/kn/g, 'n');     // knee -> nee
+  w = w.replace(/wr/g, 'r');     // write -> rite
+  w = w.replace(/wh/g, 'w');     // what -> wat
+  w = w.replace(/ck/g, 'k');     // back -> bak
+  w = w.replace(/tch/g, 'ch');   // watch -> wach
+  w = w.replace(/dge/g, 'j');    // badge -> baj
+  w = w.replace(/tion/g, 'shun'); // nation -> nashun
+  w = w.replace(/sion/g, 'zhun'); // vision -> vizhun
+  
+  // Remove silent letters at end
+  w = w.replace(/mb$/g, 'm');    // lamb -> lam
+  w = w.replace(/mn$/g, 'm');    // autumn -> autum
+  
+  // Vowel normalizations (they often sound similar)
+  w = w.replace(/[aeiou]+/g, 'a'); // Collapse vowels
+  
+  return w;
+};
+
+// Calculate similarity using multiple methods
+const calculateSimilarity = (recognized, expected) => {
+  const r = recognized.toLowerCase().trim();
+  const e = expected.toLowerCase().trim();
+  
+  console.log(`🔍 Comparing: "${r}" vs "${e}"`);
+  
+  // 1. EXACT MATCH
+  if (r === e) {
+    console.log('  ✓ Exact match!');
+    return 1.0;
+  }
+  
+  // 2. CHECK IF EXPECTED WORD IS IN THE PHRASE
+  // Handles: "I said apple" contains "apple"
+  const words = r.split(/\s+/);
+  if (words.includes(e)) {
+    console.log('  ✓ Found exact word in phrase');
+    return 0.95;
+  }
+  
+  // 3. PHONETIC CODE MATCH (Soundex-style)
+  // "sun" and "son" both encode to "S500"
+  const rCode = getPhoneticCode(r);
+  const eCode = getPhoneticCode(e);
+  console.log(`  Phonetic codes: "${rCode}" vs "${eCode}"`);
+  
+  if (rCode === eCode) {
+    console.log('  ✓ Phonetic match!');
+    return 0.9;
+  }
+  
+  // 4. NORMALIZED SOUND MATCH
+  const rNorm = normalizeForSound(r);
+  const eNorm = normalizeForSound(e);
+  console.log(`  Normalized: "${rNorm}" vs "${eNorm}"`);
+  
+  if (rNorm === eNorm) {
+    console.log('  ✓ Normalized sound match!');
+    return 0.85;
+  }
+  
+  // 5. CONTAINS CHECK
+  if (r.includes(e) || e.includes(r)) {
+    console.log('  ✓ Contains match');
+    return 0.8;
+  }
+  
+  // 6. FIRST SOUND MATCH (for short words)
+  // Kids might say just the beginning
+  if (e.length >= 3 && r.length >= 2) {
+    if (r.substring(0, 2) === e.substring(0, 2)) {
+      console.log('  ✓ First sounds match');
+      return 0.7;
+    }
+  }
+  
+  // 7. LEVENSHTEIN DISTANCE (letter-by-letter)
+  const matrix = [];
+  for (let i = 0; i <= e.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= r.length; j++) matrix[0][j] = j;
+  
+  for (let i = 1; i <= e.length; i++) {
+    for (let j = 1; j <= r.length; j++) {
+      if (e[i-1] === r[j-1]) {
+        matrix[i][j] = matrix[i-1][j-1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i-1][j-1] + 1,
+          matrix[i][j-1] + 1,
+          matrix[i-1][j] + 1
+        );
+      }
+    }
+  }
+  
+  const distance = matrix[e.length][r.length];
+  const maxLen = Math.max(r.length, e.length);
+  let similarity = 1 - (distance / maxLen);
+  
+  // Boost for short words with 1 letter difference
+  if (e.length <= 4 && distance <= 1) {
+    similarity = Math.max(similarity, 0.65);
+  }
+  
+  console.log(`  Levenshtein: distance=${distance}, similarity=${similarity.toFixed(2)}`);
+  
+  return similarity;
+};
+
+// Get feedback message based on similarity score
+const getFeedback = (similarity, expectedWord, recognizedText) => {
+  if (similarity >= 0.7) {
+    return { message: "Correct! Great job!", type: 'success', score: similarity };
+  } else {
+    return { message: "Try again!", type: 'error', score: similarity };
   }
 };
 
@@ -81,18 +250,24 @@ const CinematicIntro = ({ onComplete }) => {
         
         {/* SEQUENTIAL DROPPING TEXT */}
         <div className={`flex gap-1 md:gap-3 mb-6 ${phase === 'machine' ? 'animate-shake-impact' : ''}`}>
-          {['T','E','A','C','H','E','R'].map((char, i) => (
-            <div key={i} className="relative group" style={{ 
-                animation: phase !== 'start' ? `heavy-drop 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards` : 'none', 
-                animationDelay: `${i * 0.08}s`, // Faster letter drops (0.08s)
-                opacity: 0, 
-                transform: 'translateY(-100vh)' 
-            }}>
-              <div className="w-10 h-14 md:w-20 md:h-28 bg-gradient-to-b from-yellow-300 to-yellow-500 border-b-8 border-r-8 border-yellow-700 rounded-lg shadow-[0_10px_30px_rgba(234,179,8,0.3)] flex items-center justify-center">
-                <span className="text-3xl md:text-7xl font-black text-yellow-900 font-sans drop-shadow-sm">{char}</span>
+          {['T','E','A','C','H','E','R'].map((char, i) => {
+            const delay = i * 0.08;
+            return (
+              <div key={i} className="relative group" style={{ 
+                  animationName: phase !== 'start' ? 'heavy-drop' : 'none',
+                  animationDuration: phase !== 'start' ? '0.5s' : undefined,
+                  animationTimingFunction: phase !== 'start' ? 'cubic-bezier(0.25, 1, 0.5, 1)' : undefined,
+                  animationDelay: phase !== 'start' ? `${delay}s` : undefined,
+                  animationFillMode: phase !== 'start' ? 'forwards' : undefined,
+                  opacity: phase === 'start' ? 0 : undefined, 
+                  transform: phase === 'start' ? 'translateY(-100vh)' : undefined
+              }}>
+                <div className="w-10 h-14 md:w-20 md:h-28 bg-gradient-to-b from-yellow-300 to-yellow-500 border-b-8 border-r-8 border-yellow-700 rounded-lg shadow-[0_10px_30px_rgba(234,179,8,0.3)] flex items-center justify-center">
+                  <span className="text-3xl md:text-7xl font-black text-yellow-900 font-sans drop-shadow-sm">{char}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* MACHINE SLIDER */}
@@ -135,7 +310,7 @@ const MagicMirror = ({ onScan }) => {
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
       .then(s => { if(videoRef.current) videoRef.current.srcObject = s; })
       .catch((e) => {
-        console.error("Camera access denied:", e);
+        // Camera access denied - this is expected and handled gracefully
         setError(true);
       }); 
 
@@ -235,79 +410,267 @@ const TeacherPortal = ({ onExit }) => {
 // ==========================================
 const StudentApp = ({ student, onLogout }) => {
   const [level, setLevel] = useState(0);
-  const [stage, setStage] = useState('welcome'); 
-  const [status, setStatus] = useState('idle'); 
+  const [stage, setStage] = useState('learn');
+  const [status, setStatus] = useState('idle'); // idle, listening, processing, success
+  const [showCelebration, setShowCelebration] = useState(false); 
   const [coins, setCoins] = useState(student ? student.coins : 0);
+  const [feedback, setFeedback] = useState(null);
+  const [heardText, setHeardText] = useState('');
+  
+  // Refs to track state across callbacks
+  const levelRef = useRef(0);
+  const isListeningRef = useRef(false);
+  const hasStartedRef = useRef(false);
+  const recognitionRef = useRef(null);
+  
+  // Keep levelRef in sync
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
   
   if (!student) return null;
-  const word = CURRICULUM[level] || CURRICULUM[0]; 
+  const word = CURRICULUM[level] || CURRICULUM[0];
 
-  // --- ACTIONS ---
-  const handleStart = () => {
-    // 1. Speak Welcome Only
-    speak(`Let's learn!`);
-    // 2. Transition
-    setStage('listen');
+  // Main function: Speak the word, then listen
+  const speakThenListen = () => {
+    if (isListeningRef.current) return;
+    
+    console.log('🔊 Speaking:', word.en);
+    setStatus('idle');
+    setFeedback(null);
+    setHeardText('');
+    
+    // Use speech synthesis
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word.en);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.8;
+      
+      utterance.onend = () => {
+        console.log('🔊 Speech ended, starting listener in 500ms...');
+        setTimeout(() => {
+          startListening();
+        }, 500);
+      };
+      
+      utterance.onerror = (e) => {
+        console.error('Speech error:', e);
+        // Still try to listen even if speech fails
+        setTimeout(() => startListening(), 500);
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      // No speech synthesis, just start listening
+      startListening();
+    }
   };
 
-  const handleMic = () => {
+  // Start speech recognition
+  const startListening = () => {
+    if (isListeningRef.current) {
+      console.log('Already listening, skip');
+      return;
+    }
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setFeedback({ message: "Please use Chrome browser! 🌐", type: 'error' });
+      return;
+    }
+    
+    console.log('🎤 Starting recognition...');
+    isListeningRef.current = true;
     setStatus('listening');
-    // Simulate AI Processing
-    setTimeout(() => {
-      setStatus('success');
-      new Audio('https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3').play().catch(()=>{});
+    setHeardText('');
+    
+    let gotResult = false;
+    let timeoutId = null;
+    
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
+    
+    recognition.onstart = () => {
+      console.log('🎤 Recognition started!');
+    };
+    
+    recognition.onresult = (event) => {
+      gotResult = true;
+      const transcript = event.results[0][0].transcript;
+      console.log('🎤 Heard:', transcript, 'isFinal:', event.results[0].isFinal);
+      setHeardText(transcript);
       
-      setTimeout(() => {
-        if (stage === 'listen') { 
-          setStage('read'); 
-          setStatus('idle'); 
-        } else { 
-          // FINISHED WORD
-          setCoins(c => c + 10);
+      if (event.results[0].isFinal) {
+        if (timeoutId) clearTimeout(timeoutId);
+        isListeningRef.current = false;
+        processResult(transcript.toLowerCase().trim());
+      }
+    };
+    
+    recognition.onerror = (event) => {
+      console.error('🎤 Error:', event.error);
+      if (timeoutId) clearTimeout(timeoutId);
+      isListeningRef.current = false;
+      
+      if (event.error === 'no-speech') {
+        // Child didn't speak - just try again automatically with encouragement
+        setFeedback({ message: "Let's try again! 🌟", type: 'encourage' });
+        setTimeout(() => {
+          setFeedback(null);
+          speakThenListen();
+        }, 1000);
+      } else if (event.error === 'not-allowed') {
+        setStatus('idle');
+        setFeedback({ message: "Please allow the microphone! 🎤", type: 'error' });
+      } else if (event.error !== 'aborted') {
+        // Auto-retry on other errors
+        setTimeout(() => speakThenListen(), 1000);
+      }
+    };
+    
+    recognition.onend = () => {
+      console.log('🎤 Recognition ended, gotResult:', gotResult);
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      // If no result, automatically try again (child-friendly - no action needed)
+      if (isListeningRef.current && !gotResult) {
+        isListeningRef.current = false;
+        setFeedback({ message: "Let's try again! 🌟", type: 'encourage' });
+        setTimeout(() => {
+          setFeedback(null);
+          speakThenListen();
+        }, 1000);
+      }
+      isListeningRef.current = false;
+    };
+    
+    try {
+      recognition.start();
+      
+      // Auto-timeout after 5 seconds - automatically retry (no scary messages!)
+      timeoutId = setTimeout(() => {
+        if (isListeningRef.current) {
+          console.log('🎤 Timeout - auto-retrying');
+          try { recognition.stop(); } catch(e) {}
           
-          if (level < 7 && level < CURRICULUM.length - 1) {
-             setLevel(l => l + 1); // Next Word
-             setStage('listen');
-             setStatus('idle');
-          } else {
-             setStage('reward'); // Finished Session
+          if (!gotResult) {
+            isListeningRef.current = false;
+            // Show brief encouraging message, then auto-retry
+            setFeedback({ message: "Say it with me! 🎵", type: 'encourage' });
+            setTimeout(() => {
+              setFeedback(null);
+              speakThenListen();
+            }, 1000);
           }
         }
-      }, 1500);
-    }, 2000);
+      }, 5000);
+      
+    } catch (e) {
+      console.error('Failed to start recognition:', e);
+      isListeningRef.current = false;
+      // Auto-retry
+      setTimeout(() => speakThenListen(), 1000);
+    }
   };
 
-  const playWordAudio = () => {
-    speak(word.en);
+  // Process the recognized speech
+  const processResult = (heard) => {
+    const currentWord = CURRICULUM[levelRef.current];
+    const expected = currentWord.en.toLowerCase();
+    
+    console.log('📝 Processing:', heard, 'vs', expected);
+    setStatus('processing');
+    
+    // Calculate similarity
+    const similarity = calculateSimilarity(heard, expected);
+    console.log('📝 Similarity:', similarity);
+    
+    if (similarity >= 0.6) {
+      // CORRECT!
+      console.log('✅ Correct! Heard:', heard, 'Expected:', expected, 'Similarity:', similarity);
+      setFeedback({ message: `🎉 Correct! "${heard}"`, type: 'success' });
+      setShowCelebration(true);
+      setCoins(c => c + 10);
+      
+      // Play success sound
+      try {
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3').play();
+      } catch(e) {}
+      
+      // Move to next word after delay
+      setTimeout(() => {
+        setShowCelebration(false);
+        if (levelRef.current < CURRICULUM.length - 1) {
+          const next = levelRef.current + 1;
+          levelRef.current = next;
+          hasStartedRef.current = false;
+          setLevel(next);
+          setStatus('idle');
+          setFeedback(null);
+          setHeardText('');
+        } else {
+          setStage('reward');
+        }
+      }, 2500);
+      
+    } else {
+      // INCORRECT - Try again
+      console.log('❌ Incorrect, try again');
+      setFeedback({ message: `Heard "${heard}" - Try again!`, type: 'error' });
+      
+      // Play error sound
+      try {
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.wav').play();
+      } catch(e) {}
+      
+      // Retry after delay
+      setTimeout(() => {
+        setStatus('idle');
+        speakThenListen();
+      }, 2500);
+    }
   };
 
-  // Auto-play when entering Listen
+  // Auto-start when entering learn stage
   useEffect(() => {
-    if (stage === 'listen') {
-      const delay = 1500; 
-      const timer = setTimeout(playWordAudio, delay);
+    if (stage === 'learn' && !hasStartedRef.current) {
+      hasStartedRef.current = true;
+      console.log('🚀 Auto-starting for word:', word.en);
+      
+      // Give browser time to mount + request mic permission on first run
+      const timer = setTimeout(() => {
+        speakThenListen();
+      }, 800);
+      
       return () => clearTimeout(timer);
     }
-  }, [stage, word]);
+  }, [stage, level]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch(e) {}
+      }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
+  // Manual replay button
+  const handleReplay = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch(e) {}
+    }
+    isListeningRef.current = false;
+    speakThenListen();
+  };
 
   // --- RENDERERS ---
-
-  // 1. WELCOME
-  if (stage === 'welcome') return (
-    <div className="h-screen w-full bg-white flex flex-col items-center justify-center relative overflow-hidden font-sans animate-fade-in">
-      <div className="absolute inset-0 pointer-events-none opacity-5 bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:20px_20px]"></div>
-      <div className="relative z-10 flex flex-col items-center w-full max-w-sm px-4 sm:px-6">
-        <div className="w-32 h-32 sm:w-48 sm:h-48 bg-yellow-100 rounded-full flex items-center justify-center text-6xl sm:text-9xl shadow-xl border-4 sm:border-8 border-white mb-6 sm:mb-8 animate-bounce-gentle">
-             {student.gender === 'boy' ? '👦' : '👧'}
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-slate-800 mb-2 tracking-tight text-center px-2">Hello, {student.name}!</h1>
-        <p className="text-slate-400 font-bold mb-8 sm:mb-12 uppercase tracking-widest text-xs sm:text-sm">Ready to learn?</p>
-        <button onClick={handleStart} className="w-full bg-green-500 hover:bg-green-600 text-white font-black text-lg sm:text-2xl py-4 sm:py-5 rounded-2xl shadow-[0_6px_0_rgb(21,128,61)] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center gap-2 sm:gap-3 border-b-4 border-green-700">
-          START <Play fill="white" size={24} className="sm:w-7 sm:h-7" />
-        </button>
-      </div>
-    </div>
-  );
 
   // 2. REWARD
   if (stage === 'reward') return (
@@ -327,9 +690,21 @@ const StudentApp = ({ student, onLogout }) => {
     </div>
   );
 
-  // 3. LEARNING (Listen / Read)
+  // 3. LEARNING (Unified View with all elements)
   return (
     <div className={`h-screen w-full flex flex-col font-sans transition-colors duration-700 ${word.color} relative overflow-hidden`}>
+      {/* Celebration Animation */}
+      {showCelebration && (
+        <div className="fixed inset-0 z-[200] pointer-events-none animate-celebration">
+          <div className="absolute top-1/4 left-1/4 text-6xl animate-bounce">🎉</div>
+          <div className="absolute top-1/3 right-1/4 text-5xl animate-bounce delay-100">⭐</div>
+          <div className="absolute bottom-1/3 left-1/3 text-6xl animate-bounce delay-200">✨</div>
+          <div className="absolute bottom-1/4 right-1/3 text-5xl animate-bounce delay-300">🌟</div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-7xl animate-pulse">🎊</div>
+          <div className="absolute top-2/5 right-1/5 text-4xl animate-bounce delay-400">💫</div>
+          <div className="absolute bottom-2/5 left-1/5 text-5xl animate-bounce delay-500">🎈</div>
+        </div>
+      )}
       {/* Header */}
       <div className="absolute top-0 left-0 w-full p-3 sm:p-6 flex justify-between items-center z-20">
         <div className="flex gap-1 sm:gap-2">
@@ -345,53 +720,78 @@ const StudentApp = ({ student, onLogout }) => {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - All elements shown together */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full pt-20 sm:pt-28 pb-4">
-         <div className="flex-1 flex flex-col items-center justify-center w-full px-4">
-            {stage === 'listen' ? (
-              <div className="animate-pop-in flex flex-col items-center justify-center h-full w-full">
-                 <div 
-                   className="text-[80px] sm:text-[120px] md:text-[150px] leading-none filter drop-shadow-2xl transform hover:scale-110 transition-transform cursor-pointer" 
-                   onClick={playWordAudio}
-                 >
-                    {word.img}
-                 </div>
-                 
-                 <div className="mt-4 sm:mt-8 bg-white/40 backdrop-blur-sm px-4 sm:px-8 py-2 sm:py-3 rounded-2xl border-2 border-white/50 shadow-sm">
-                    <span className="text-2xl sm:text-4xl font-black text-slate-800 drop-shadow-sm">{word.vn}</span>
-                 </div>
-                 
-                 <button onClick={playWordAudio} className="mt-4 sm:mt-8 bg-white text-blue-500 px-6 sm:px-10 py-3 sm:py-4 rounded-full font-black text-base sm:text-xl flex items-center gap-2 sm:gap-4 shadow-xl hover:bg-blue-50 transition-all active:scale-95 border-b-4 border-blue-100">
-                    <Volume2 size={24} className="sm:w-8 sm:h-8" /> <span className="text-sm sm:text-xl">Tap to Listen</span>
-                 </button>
-              </div>
-            ) : (
-              <div className="animate-pop-in text-center px-4 flex flex-col items-center justify-center h-full w-full">
-                 <h1 className="text-5xl sm:text-7xl md:text-8xl font-black text-slate-800 mb-4 sm:mb-6 tracking-tighter drop-shadow-sm break-words">{word.en}</h1>
-                 <div className="flex flex-col gap-2 bg-white/60 px-4 sm:px-8 py-4 sm:py-6 rounded-2xl sm:rounded-3xl backdrop-blur-md border border-white/40 shadow-sm w-full max-w-[90%] sm:min-w-[250px]">
-                    <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-500 font-mono tracking-wider break-words">{word.phonetic}</p>
-                    <p className="text-xl sm:text-2xl md:text-3xl font-black text-blue-600 break-words">{word.vn}</p>
-                 </div>
-              </div>
-            )}
+         <div className="flex-1 flex flex-col items-center justify-center w-full px-4 max-w-2xl">
+            <div className="animate-pop-in flex flex-col items-center justify-center w-full space-y-4 sm:space-y-6">
+               {/* Image */}
+               <div 
+                 className="text-[100px] sm:text-[140px] md:text-[180px] leading-none filter drop-shadow-2xl transform hover:scale-110 transition-transform cursor-pointer" 
+                 onClick={handleReplay}
+               >
+                  {word.img}
+               </div>
+               
+               {/* English Word */}
+               <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-slate-800 tracking-tighter drop-shadow-sm text-center break-words">
+                  {word.en}
+               </h1>
+               
+               {/* Kannada Translation */}
+               <div className="bg-white/60 backdrop-blur-sm px-6 sm:px-10 py-3 sm:py-4 rounded-2xl sm:rounded-3xl border-2 border-white/50 shadow-lg">
+                  <span className="text-3xl sm:text-5xl font-black text-blue-600 drop-shadow-sm">{word.vn}</span>
+               </div>
+               
+               {/* Transliteration (English word in Kannada script) */}
+               <div className="bg-white/50 backdrop-blur-sm px-6 sm:px-10 py-2 sm:py-3 rounded-xl sm:rounded-2xl border border-white/40 shadow-md">
+                  <p className="text-2xl sm:text-4xl font-bold text-gray-700 tracking-wider">{word.translit}</p>
+               </div>
+            </div>
          </div>
 
-         <div className="w-full flex justify-center px-4 sm:px-6 pb-4 sm:pb-6">
-             {status === 'listening' ? (
-               <div className="bg-white px-4 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-2xl flex items-center gap-2 sm:gap-4 border-4 border-red-100 animate-pulse w-full max-w-sm justify-center">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full animate-ping"></div>
-                  <span className="text-base sm:text-xl font-black text-red-500 uppercase tracking-widest">Listening...</span>
+         {/* Status and Feedback Section */}
+         <div className="w-full flex flex-col items-center px-4 sm:px-6 pb-4 sm:pb-6 space-y-3">
+             
+             {/* Listening indicator - child-friendly */}
+             {status === 'listening' && (
+               <div className="bg-white px-6 sm:px-10 py-4 sm:py-6 rounded-3xl shadow-2xl flex flex-col items-center gap-3 border-4 border-purple-400 w-full max-w-md">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full animate-ping absolute"></div>
+                      <div className="w-8 h-8 bg-purple-600 rounded-full relative flex items-center justify-center">
+                        <Mic size={16} className="text-white" />
+                      </div>
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-purple-600">Say it! 🗣️</span>
+                  </div>
+                  {heardText && (
+                    <p className="text-xl font-bold text-gray-700 bg-gray-100 px-4 py-2 rounded-xl">"{heardText}"</p>
+                  )}
                </div>
-             ) : status === 'success' ? (
-               <div className="bg-green-500 px-4 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-2xl flex items-center gap-2 sm:gap-4 animate-pop-in w-full max-w-sm justify-center">
-                  <Check size={24} className="sm:w-8 sm:h-8 text-white" strokeWidth={4} />
-                  <span className="text-base sm:text-xl font-black text-white uppercase tracking-widest">Perfect!</span>
+             )}
+             
+             {/* Feedback messages */}
+             {feedback && (
+               <div className={`px-6 sm:px-10 py-4 sm:py-5 rounded-3xl shadow-2xl w-full max-w-md text-center animate-pop-in ${
+                 feedback.type === 'success' ? 'bg-green-500 text-white border-4 border-green-300' :
+                 feedback.type === 'encourage' ? 'bg-purple-500 text-white border-4 border-purple-300' :
+                 feedback.type === 'error' ? 'bg-orange-500 text-white border-4 border-orange-300' :
+                 'bg-yellow-400 text-yellow-900 border-4 border-yellow-300'
+               }`}>
+                  <p className="text-2xl sm:text-3xl font-black">{feedback.message}</p>
                </div>
-             ) : (
-               <button onClick={handleMic} className={`${word.btn} text-white font-black text-base sm:text-xl py-3 sm:py-4 px-6 sm:px-10 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 sm:gap-3 w-full max-w-sm`}>
-                 <Mic size={20} className="sm:w-7 sm:h-7" /> <span>{stage === 'listen' ? "SAY IT" : "READ IT"}</span>
+             )}
+             
+             {/* Manual replay - only if stuck (e.g., mic blocked) */}
+             {status === 'idle' && feedback?.type === 'error' && (
+               <button 
+                 onClick={handleReplay}
+                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl shadow-xl font-black text-xl flex items-center gap-3 transition-all active:scale-95 mt-4"
+               >
+                 <Volume2 size={28} /> Try Again
                </button>
              )}
+             
          </div>
       </div>
     </div>
@@ -416,6 +816,7 @@ export default function App() {
   }, [showIntro, view, showTeacher]);
 
   const handleDemoLogin = () => {
+    // Web Speech API doesn't need explicit permission request - it asks automatically when recognition starts
     setStudent(DB.students[0]);
     setView('student');
   };
@@ -468,10 +869,27 @@ export default function App() {
         .animate-fade-in { animation: fadeIn 1s ease-out; }
         .animate-pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .animate-bounce-gentle { animation: bounce 2s infinite ease-in-out; }
+        .animate-celebration { animation: fadeIn 0.3s ease-out; }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .animate-celebration { animation: fadeIn 0.3s ease-out; }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+        @keyframes celebration { 
+          0% { opacity: 0; transform: scale(0); } 
+          50% { opacity: 1; transform: scale(1.2); }
+          100% { opacity: 0; transform: scale(1) translateY(-100px); }
+        }
         @keyframes heavy-drop { 0% { transform: translateY(-100vh) rotate(-10deg); opacity: 1; } 60% { transform: translateY(0); } 75% { transform: translateY(-20px) rotate(5deg); } 100% { transform: translateY(0) rotate(0deg); opacity: 1; } }
         @keyframes cyber-slide { 0% { transform: translateX(-100vw) skewX(-20deg); opacity: 0; filter: blur(10px); } 70% { transform: translateX(20px) skewX(10deg); opacity: 1; filter: blur(0px); } 100% { transform: translateX(0) skewX(0deg); opacity: 1; } }
         @keyframes shake-impact { 0%, 100% { transform: translate(0, 0); } 20%, 60% { transform: translate(2px, -1px); } 40%, 80% { transform: translate(-2px, 1px); } }

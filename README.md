@@ -1,101 +1,103 @@
-# Marigold Magic - Teacher In Machine
+# 🎓 Teacher In Machine
 
-A gamified learning platform for Grade 1 students in India, designed for Kiosks/Tablets using simulated Face Authentication.
+A gamified English learning platform for Grade 1 students in India. Built with React, featuring speech recognition for pronunciation practice.
 
-## Features
+![Demo](https://img.shields.io/badge/Demo-Live-brightgreen) ![React](https://img.shields.io/badge/React-18-blue) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-06B6D4)
 
-- **Cinematic Intro**: Engaging animated introduction sequence
-- **Magic Mirror**: Face detection landing page with camera feed
-- **Teacher Portal**: Admin dashboard for managing students and classes
-- **Student Learning Flow**: Immersive, linear learning experience with:
-  - Listen stage: Visual and audio learning
-  - Read stage: Text recognition and pronunciation
-  - Reward system: Coin collection and progress tracking
+## ✨ Features
 
-## Tech Stack
+- 🎮 **Gamified Learning** - Earn coins for correct pronunciation
+- 🗣️ **Speech Recognition** - Uses Web Speech API for pronunciation checking
+- 🔊 **Text-to-Speech** - Words are spoken aloud for the child to repeat
+- 🎯 **Phonetic Matching** - Smart matching that understands "sun" = "son"
+- 👶 **Child-Friendly** - No buttons needed, automatic retry on failure
+- 🌈 **Beautiful UI** - Colorful, engaging interface with animations
+- 📱 **Responsive** - Works on tablets and kiosks
 
-- **React 18** with Vite
-- **Tailwind CSS** for styling
-- **Lucide React** for icons
-- **Native CSS Keyframes** for high-performance animations
+## 🎯 How It Works
 
-## Getting Started
+1. **Demo Student** - Click to start the learning experience
+2. **Listen** - The word is spoken automatically
+3. **Speak** - Say the word out loud
+4. **Feedback** - Get instant feedback with celebrations for correct answers
+5. **Progress** - Move through 8 vocabulary words earning coins
 
-### Prerequisites
+## 📚 Curriculum
 
-- Node.js 18+ and npm/yarn
+| Word | Kannada | Image |
+|------|---------|-------|
+| Apple | ಸೇಬು | 🍎 |
+| Ball | ಚೆಂಡು | ⚽ |
+| Cat | ಬೆಕ್ಕು | 🐱 |
+| Dog | ನಾಯಿ | 🐕 |
+| Sun | ಸೂರ್ಯ | ☀️ |
+| Fish | ಮೀನು | 🐟 |
+| Girl | ಹುಡುಗಿ | 👧 |
+| House | ಮನೆ | 🏠 |
 
-### Installation
+## 🚀 Quick Start
 
-1. Install dependencies:
 ```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/teacher-in-machine.git
+cd teacher-in-machine
+
+# Install dependencies
 npm install
-```
 
-2. Start the development server:
-```bash
+# Start development server
 npm run dev
 ```
 
-3. Open your browser and navigate to the URL shown in the terminal (typically `http://localhost:5173`)
+Open **http://localhost:5173** in Chrome (required for speech recognition).
 
-### Building for Production
+## 🛠️ Tech Stack
 
-```bash
-npm run build
-```
+- **React 18** - UI framework
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+- **Web Speech API** - Speech recognition & synthesis
 
-The built files will be in the `dist` directory.
+## 🎤 Speech Recognition
 
-## Usage
+The app uses a multi-layer phonetic matching system:
 
-1. **Cinematic Intro**: Wait for the animated intro to complete
-2. **Magic Mirror**: Click "Demo Student" to test the app, or "Teacher Access" to manage students
-3. **Student Flow**: 
-   - View welcome screen with personalized greeting
-   - Learn words through Listen and Read stages
-   - Collect coins and track progress
-4. **Teacher Portal**: 
-   - Login with default credentials (teacher@school.com / pass)
-   - Add new students
-   - View class roster and coin counts
+1. **Exact match** - "apple" = "apple" ✅
+2. **Phonetic codes** (Soundex) - "sun" = "son" ✅
+3. **Sound normalization** - "phone" = "fone" ✅
+4. **Partial matching** - "apples" contains "apple" ✅
+5. **Levenshtein distance** - 1 letter difference allowed ✅
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-project_application/
 ├── src/
-│   ├── App.jsx          # Main application component
-│   ├── main.jsx         # React entry point
-│   └── index.css        # Tailwind CSS imports
-├── index.html           # HTML template
-├── package.json         # Dependencies
-├── vite.config.js       # Vite configuration
-├── tailwind.config.js   # Tailwind CSS configuration
-└── postcss.config.js    # PostCSS configuration
+│   ├── App.jsx      # Main application component
+│   ├── main.jsx     # React entry point
+│   └── index.css    # Global styles
+├── index.html       # HTML template
+├── package.json     # Dependencies
+├── tailwind.config.js
+├── vite.config.js
+└── README.md
 ```
 
-## Curriculum
+## 🌐 Browser Support
 
-The app includes 8 words for Grade 1 students:
-- Apple (ಸೇಬು)
-- Ball (ಚೆಂಡು)
-- Cat (ಬೆಕ್ಕು)
-- Dog (ನಾಯಿ)
-- Sun (ಸೂರ್ಯ)
-- Fish (ಮೀನು)
-- Girl (ಹುಡುಗಿ)
-- House (ಮನೆ)
+- ✅ Chrome (recommended)
+- ✅ Edge
+- ⚠️ Safari (limited speech recognition)
+- ❌ Firefox (no Web Speech API support)
 
-Each word includes English text, Kannada translation, phonetic pronunciation, and visual emoji representation.
+## 📝 License
 
-## Notes
+MIT License - feel free to use for educational purposes!
 
-- Camera access is required for the Magic Mirror feature
-- Speech synthesis is used for audio playback
-- The app is designed for tablet/kiosk use with touch interactions
-- All animations are CSS-based for optimal performance
+## 🙏 Acknowledgments
 
-## License
+Built for the **Teacher In Machine** project - bringing interactive English learning to schools in India.
 
-This project is for educational purposes.
+---
+
+Made with ❤️ for young learners
